@@ -9,7 +9,6 @@ import getpass
 from requests.auth import HTTPBasicAuth
 
 import re
-from JiraIssuesGroup import JiraIssuesGroup
 
 from dateutil.parser import parse
 
@@ -29,7 +28,7 @@ class GitHubStats:
 
     def parsePrs(self, prs):
         nbrPrs = len(prs)
-        print( str(nbrPrs) )
+        print( "nbr of merged PRs: " + str(nbrPrs) )
         tfm = 0
         for pr in prs:
             prid = pr['number']
@@ -37,7 +36,7 @@ class GitHubStats:
             if closed is not None:
                 tfm = tfm + self.getTimeForMerge(pr)
                 if tfm > 36:
-                    print pr['html_url']
+                    print ("took more than 36 hours to merge: " + pr['html_url'])
         print ("avg tfm = " + str(tfm / nbrPrs))
 
     def getTimeForMerge(self, pr):
