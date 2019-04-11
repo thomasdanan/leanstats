@@ -6,6 +6,8 @@ import datetime
 import math
 import requests
 import getpass
+import numpy as np
+
 from requests.auth import HTTPBasicAuth
 
 import re
@@ -42,8 +44,12 @@ class GitHubStats:
     def getTimeForMerge(self, pr):
         created = parse(pr['created_at'])
         closed = parse(pr['closed_at'])
-        tfm = (closed - created)
-        return tfm.total_seconds()/60/60
+        # don't count weekends
+        deltadays = np.busday_count( str(created.strftime("%Y-%m-%d")), str(closed.strftime("%Y-%m-%d")) )
+        deltahours = closed.hour - created.hour
+
+        tfm = deltadays * 24 + deltahours
+        return tfm
 
       ## Link: <https://api.github.com/repositories/124905930/pulls?state=closed&page=17>; rel="prev", <https://api.github.com/repositories/124905930/pulls?state=closed&page=1>; rel="first"
     def getNextPage(self, headers):
