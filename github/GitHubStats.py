@@ -38,7 +38,7 @@ class GitHubStats:
             if closed is not None:
                 tfm = tfm + self.getTimeForMerge(pr)
                 if tfm > 36:
-                    print ("suspicious PR (more than 36 hours): " + pr['html_url'])
+                    print ("suspicious PR ("+ str(tfm) +"): " + pr['html_url'])
         print ("avg tfm (hours) = " + str(tfm / nbrPrs))
 
     def getTimeForMerge(self, pr):
