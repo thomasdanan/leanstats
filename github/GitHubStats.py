@@ -29,59 +29,84 @@ class GitHubStats:
 
 
     def parsePrs(self, prs):
-        nbrPrs = len(prs)
-        print( "nbr of merged PRs: " + str(nbrPrs) )
-        tfm = 0
+        nbrMergedPrs = 0
+        cumulatedTfm = 0
         for pr in prs:
+            #tfm = time for merge: time between ready for review and merge
+
             prid = pr['number']
-            closed = pr['closed_at']
-            if closed is not None:
-                tfm = tfm + self.getTimeForMerge(pr)
-                if tfm > 36:
-                    print ("suspicious PR ("+ str(tfm) +"): " + pr['html_url'])
-        print ("avg tfm (hours) = " + str(tfm / nbrPrs))
+            # for standard PRs, ready for review date is equivalent to PR open date
+            created = parse(pr['created_at'])
+            closed = parse(pr['closed_at'])
+            eventsUrl = pr['events_url']
+            events = self.collectItems(eventsUrl)
+            ready_review = self.getEventDate(events,'ready_for_review')
+            # for draft PRs, ready for review date is available in event list
+            if ready_review is not None:
+                created = ready_review
+            #merged = self.getEventDate(events, 'merged')
+            if created is not None and closed is not None:
+                nbrMergedPrs = nbrMergedPrs + 1
+                prTfm = self.getDeltaWEExcluded(created, closed)
+                cumulatedTfm = cumulatedTfm + prTfm
+                if prTfm > 36:
+                    print ("time,"+ str(prTfm) + ",created," + self.getDayDate(created) + ",closed," + self.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
+        print( "nbr of merged PRs: " + str(nbrMergedPrs) )
+        print ("avg tfm (hours) = " + str(cumulatedTfm / nbrMergedPrs))
 
-    def getTimeForMerge(self, pr):
-        created = parse(pr['created_at'])
-        closed = parse(pr['closed_at'])
+    def getEventDate(self, events, eventKey):
+        for event in events:
+            if event['event'] == eventKey:
+                return parse(event['created_at'])
+        return None
+
+    def getDayDate(self, date):
+        return str(date.strftime("%Y-%m-%d"))
+
+
+    def getDeltaWEExcluded(self, start, end):
         # don't count weekends
-        deltadays = np.busday_count( str(created.strftime("%Y-%m-%d")), str(closed.strftime("%Y-%m-%d")) )
-        deltahours = closed.hour - created.hour
-
-        tfm = deltadays * 24 + deltahours
+        deltadays = np.busday_count( self.getDayDate(start), self.getDayDate(end) )
+        deltahours = end.hour - start.hour
+        tfm = (deltadays * 24) + deltahours
         return tfm
 
       ## Link: <https://api.github.com/repositories/124905930/pulls?state=closed&page=17>; rel="prev", <https://api.github.com/repositories/124905930/pulls?state=closed&page=1>; rel="first"
-    def getNextPage(self, headers):
+    def getNextPageUrl(self, headers):
         if 'Link' in headers.keys():
             link = headers['Link']
-            matchs = re.search(".*page=([0-9]+)\>; rel=\"next\"", link)
+            matchs = re.search("<(http[^<]*)>; rel=\"next\"", link)
             if matchs != None:
                 return matchs.group(1)
         return None
 
 
-    def collectPrs(self, url):
-        nextPage = 1
-        prs = []
-        while nextPage != None:
-            urlForPage = url + "&page=" + str(nextPage)
-            #print urlForPage
-            myResponse = requests.get(urlForPage, auth=HTTPBasicAuth(self.user, self.password))
+    def collectItems(self, url):
+        nextPageUrl = url
+        items = []
+        while nextPageUrl != None:
+            myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password))
             if(myResponse.ok):
-                nextPage = self.getNextPage(myResponse.headers)
-                prs = prs + json.loads(myResponse.content)['items']
+                nextPageUrl = self.getNextPageUrl(myResponse.headers)
+                jsonResult = json.loads(myResponse.content)
+                if type(jsonResult) == list:
+                    items = items + jsonResult
+                else:
+                    items = items + jsonResult['items']
             else:
                 myResponse.raise_for_status()
-        return prs
+        return items
 
 
 
 start = raw_input("start (YYYY-MM-DD): ")
+#start = '2019-04-12'
 end = raw_input("end (YYYY-MM-DD): ")
-user = raw_input("github id: ")
+#end = '2019-04-12'
+#user = raw_input("github id: ")
+#user = 'thomasdanan'
 passwd = getpass.getpass()
 githubstats = GitHubStats(user, passwd)
-url = "https://api.github.com/search/issues?q=is:pr+is:merged+repo:scality/metalk8s+merged:"+start+".."+end
-prs = githubstats.collectPrs(url)
+url = "https://api.github.com/search/issues?q=is:pr+is:merged+repo:scality/metalk8s+merged:"+start+".."+end+"&per_page=100"
+prs = githubstats.collectItems(url)
 githubstats.parsePrs(prs)
