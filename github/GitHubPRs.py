@@ -8,25 +8,21 @@ import requests
 import getpass
 import numpy as np
 
+from GitHubClient import GitHubClient
+
+
 from requests.auth import HTTPBasicAuth
 
 import re
 
 from dateutil.parser import parse
 
-class GitHubStats:
-    user = ''
-    password = ''
+class GitHubPRs:
 
-    def __init__(self, user, password):
-        self.user = user
-        self.password = password
+    githubClient = None
 
-    def load(self, file):
-        with open(file) as jsonPRs:
-            prs = json.load(jsonPRs)
-            self.parsePrs(prs)
-
+    def __init__(self, githubClient):
+        self.githubClient = githubClient
 
     def parsePrs(self, prs):
         nbrMergedPrs = 0
@@ -39,7 +35,7 @@ class GitHubStats:
             created = parse(pr['created_at'])
             closed = parse(pr['closed_at'])
             eventsUrl = pr['events_url']
-            events = self.collectItems(eventsUrl)
+            events = githubClient.collectItems(eventsUrl)
             ready_review = self.getEventDate(events,'ready_for_review')
             # for draft PRs, ready for review date is available in event list
             if ready_review is not None:
@@ -50,7 +46,7 @@ class GitHubStats:
                 prTfm = self.getDeltaWEExcluded(created, closed)
                 cumulatedTfm = cumulatedTfm + prTfm
                 if prTfm > 36:
-                    print ("time,"+ str(prTfm) + ",created," + self.getDayDate(created) + ",closed," + self.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
+                    print (str(prTfm) + "," + self.getDayDate(created) + "," + self.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
         print( "nbr of merged PRs: " + str(nbrMergedPrs) )
         print ("avg tfm (hours) = " + str(cumulatedTfm / nbrMergedPrs))
 
@@ -71,42 +67,15 @@ class GitHubStats:
         tfm = (deltadays * 24) + deltahours
         return tfm
 
-      ## Link: <https://api.github.com/repositories/124905930/pulls?state=closed&page=17>; rel="prev", <https://api.github.com/repositories/124905930/pulls?state=closed&page=1>; rel="first"
-    def getNextPageUrl(self, headers):
-        if 'Link' in headers.keys():
-            link = headers['Link']
-            matchs = re.search("<(http[^<]*)>; rel=\"next\"", link)
-            if matchs != None:
-                return matchs.group(1)
-        return None
-
-
-    def collectItems(self, url):
-        nextPageUrl = url
-        items = []
-        while nextPageUrl != None:
-            myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password))
-            if(myResponse.ok):
-                nextPageUrl = self.getNextPageUrl(myResponse.headers)
-                jsonResult = json.loads(myResponse.content)
-                if type(jsonResult) == list:
-                    items = items + jsonResult
-                else:
-                    items = items + jsonResult['items']
-            else:
-                myResponse.raise_for_status()
-        return items
-
-
-
 start = raw_input("start (YYYY-MM-DD): ")
-#start = '2019-04-12'
+#start = '2019-04-22'
 end = raw_input("end (YYYY-MM-DD): ")
-#end = '2019-04-12'
-#user = raw_input("github id: ")
+#end = '2019-04-28'
+user = raw_input("github id: ")
 #user = 'thomasdanan'
 passwd = getpass.getpass()
-githubstats = GitHubStats(user, passwd)
+githubClient = GitHubClient(user, passwd)
+githubPrs = GitHubPRs(githubClient)
 url = "https://api.github.com/search/issues?q=is:pr+is:merged+repo:scality/metalk8s+merged:"+start+".."+end+"&per_page=100"
-prs = githubstats.collectItems(url)
-githubstats.parsePrs(prs)
+prs = githubClient.collectItems(url)
+githubPrs.parsePrs(prs)
