@@ -14,7 +14,7 @@ import re
 
 from dateutil.parser import parse
 
-class GitHubClient:
+class GHClient:
     user = ''
     password = ''
 
@@ -31,11 +31,14 @@ class GitHubClient:
                 return matchs.group(1)
         return None
 
-    def collectItems(self, url):
+    def collectItems(self, url, **headers):
         nextPageUrl = url
         items = []
         while nextPageUrl != None:
-            myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password))
+            if not headers:
+                myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password))
+            else:
+                myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password), headers=headers)
             if(myResponse.ok):
                 nextPageUrl = self.getNextPageUrl(myResponse.headers)
                 jsonResult = json.loads(myResponse.content)
