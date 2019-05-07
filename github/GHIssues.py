@@ -37,9 +37,9 @@ class GHIssues:
                 elapsedHours = GHUtils.getDeltaWEExcluded(start,parse(end))
                 end = GHUtils.getDayDate(parse(end))
 
-            elapsedDays = elapsedHours / 24
+            elapsedDays = "%.1f" % (elapsedHours / 24.0)
 
-            print str(number)+";"+complexity+";"+str(assignee['login'])+";"+GHUtils.getDayDate(start)+";"+end+";"+str(elapsedDays)
+            print str(number)+";"+complexity+";"+str(assignee['login'])+";"+GHUtils.getDayDate(start)+";"+end+";"+elapsedDays
 
 user = raw_input("github id: ")
 #user = 'thomasdanan'
