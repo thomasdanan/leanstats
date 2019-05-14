@@ -30,11 +30,10 @@ class GHPRs:
             closed = parse(pr['closed_at'])
             eventsUrl = pr['events_url']
             events = ghClient.collectItems(eventsUrl)
-            ready_review = GHUtils.getEventDate(events,'ready_for_review')
+            ready_review = GHUtils.getFirstEventDate(events,'ready_for_review')
             # for draft PRs, ready for review date is available in event list
             if ready_review is not None:
                 created = ready_review
-            #merged = self.getEventDate(events, 'merged')
             if created is not None and closed is not None:
                 nbrMergedPrs = nbrMergedPrs + 1
                 prTfm = GHUtils.getDeltaWEExcluded(created, closed)

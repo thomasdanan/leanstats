@@ -13,7 +13,14 @@ from dateutil.parser import parse
 class GHUtils:
 
     @staticmethod
-    def getEventDate(events, eventKey):
+    def getLastEventDate(events, eventKey):
+        for event in reversed(events):
+            if event['event'] == eventKey:
+                return parse(event['created_at'])
+        return None
+
+    @staticmethod
+    def getFirstEventDate(events, eventKey):
         for event in events:
             if event['event'] == eventKey:
                 return parse(event['created_at'])

@@ -27,7 +27,7 @@ class ScalityIssue:
         return self.issue
 
     def getStartDate(self):
-        return GHUtils.getEventDate(self.events,'assigned')
+        return GHUtils.getLastEventDate(self.events,'assigned')
 
 class GHIssues:
 
