@@ -26,8 +26,19 @@ class ScalityIssue:
     def getIssue(self):
         return self.issue
 
+    def getAssignee(self):
+        if self.issue['assignee'] != None:
+            return self.issue['assignee']['login']
+        else: return "Unknown"
+
     def getStartDate(self):
-        return GHUtils.getLastEventDate(self.events,'assigned')
+        if self.issue['assignee'] != None:
+            return GHUtils.getLastEventDate(self.events,'assigned')
+        else:
+            return parse(self.issue['created_at'])
+
+    def getAge(self):
+        return GHUtils.getFirstEventDate(self.events,'assigned')
 
 class GHIssues:
 
@@ -50,6 +61,10 @@ class GHIssues:
                 eventsUrl = issue['events_url']
                 events = ghClient.collectItems(eventsUrl)
                 scalityIssue = ScalityIssue(issue, complexity, events)
+                if scalityIssue.getStartDate() == None:
+                    print assignee
+                    print str(number)
+                    print state
                 closedInProgress.append(scalityIssue)
         return closedInProgress
 
@@ -61,7 +76,7 @@ class GHIssues:
             complexity = scalityIssue.getComplexity()
             number = issue['number']
             state = issue['state']
-            assignee = issue['assignee']
+            assignee = scalityIssue.getAssignee()
             start = scalityIssue.getStartDate()
             end = issue['closed_at']
             # if issue is opened, no end date so elapsed is time between start date and now
@@ -73,7 +88,7 @@ class GHIssues:
                 end = GHUtils.getDayDate(parse(end))
 
             elapsedDays = "%.1f" % (elapsedHours / 24.0)
-            print str(number)+";"+issue['title']+";"+complexity+";"+str(assignee['login'])+";"+GHUtils.getDayDate(start)+";"+end+";"+elapsedDays
+            print str(number)+";"+issue['title']+";"+complexity+";"+assignee+";"+GHUtils.getDayDate(start)+";"+end+";"+elapsedDays
 
 user = raw_input("github id: ")
 #user = 'thomasdanan'
