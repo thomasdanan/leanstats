@@ -20,6 +20,7 @@ class GHPRs:
 
     def parsePrs(self, prs):
         nbrMergedPrs = 0
+        nbrMergedPrsOutOfStandard = 0
         cumulatedTfm = 0
         for pr in prs:
             #tfm = time for merge: time between ready for review and merge
@@ -39,8 +40,10 @@ class GHPRs:
                 prTfm = GHUtils.getDeltaWEExcluded(created, closed)
                 cumulatedTfm = cumulatedTfm + prTfm
                 if prTfm > 36:
+                    nbrMergedPrsOutOfStandard = nbrMergedPrsOutOfStandard + 1
                     print (str(prTfm) + "," + GHUtils.getDayDate(created) + "," + GHUtils.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
         print( "nbr of merged PRs: " + str(nbrMergedPrs) )
+        print( "nbr of merged PRs out of standard: " + str(nbrMergedPrsOutOfStandard) )
         print ("avg tfm (hours) = " + str(cumulatedTfm / nbrMergedPrs))
 
 
