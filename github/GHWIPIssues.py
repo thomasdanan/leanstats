@@ -42,5 +42,6 @@ issues = ghClient.collectItems(url)
 for issue in issues:
     if issue['assignee'] != None:
         scalityIssue = ScalityIssue.toScalityIssue(issue, ghClient)
-        scalityIssues.append(scalityIssue)
+        if not scalityIssue.isBlocked():
+            scalityIssues.append(scalityIssue)
 ghIssues.printIssuesSummary(scalityIssues)

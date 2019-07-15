@@ -22,6 +22,16 @@ class ScalityIssue:
     def getIssue(self):
         return self.issue
 
+    def containsLabel(self, searchLabel):
+        labels = self.issue['labels']
+        for label in labels:
+            if label['name']==searchLabel:
+                return True
+        return False
+
+    def isBlocked(self):
+        return self.containsLabel('blocked')
+
     def getAssignee(self):
         if self.issue['assignee'] != None:
             return self.issue['assignee']['login']

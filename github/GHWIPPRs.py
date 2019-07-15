@@ -40,5 +40,6 @@ url = "https://api.github.com/search/issues?q=is:pr+is:open+repo:scality/metalk8
 issues = ghClient.collectItems(url)
 for issue in issues:
     scalityIssue = ScalityIssue.toScalityIssue(issue, ghClient)
-    scalityIssues.append(scalityIssue)
+    if not scalityIssue.isBlocked():
+        scalityIssues.append(scalityIssue)
 ghIssues.printIssuesSummary(scalityIssues)
