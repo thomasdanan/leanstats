@@ -53,13 +53,14 @@ class GHIssues:
             elapsedDays = "%.1f" % (elapsedHours / 24.0)
             print str(number)+";"+issue['title']+";"+complexity+";"+assignee+";"+GHUtils.getDayDate(start)+";"+end+";"+elapsedDays
 
+url = raw_input("url: ")
 user = raw_input("github id: ")
 #user = 'thomasdanan'
 passwd = getpass.getpass()
 ghClient = GHClient(user, passwd)
 ghIssues = GHIssues(ghClient)
 closedInProgress = []
-url = "https://api.github.com/search/issues?q=is:issue+repo:scality/metalk8s+milestone:\"MetalK8s 2.0.0-alpha4\"&per_page=100"
+#url = "https://api.github.com/search/issues?q=is:issue+repo:scality/metalk8s+milestone:\"MetalK8s 2.0.0-alpha4\"&per_page=100"
 issues = ghClient.collectItems(url)
 closedInProgress = closedInProgress + ghIssues.filterClosedInProgress(issues)
 ghIssues.printIssuesSummary(closedInProgress)
