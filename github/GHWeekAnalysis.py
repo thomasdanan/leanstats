@@ -37,37 +37,34 @@ class GHWeekAnalysis:
         print "avg elapsed days: " + str(elapsedDays)
         return str(nbrInStd)+","+str(nbrNotEstimated)+","+str(nbrOutStd)+","+str(elapsedDays)
 
-
-    def getPrsSummary(self, prs):
-        nbrMergedPrs = 0
-        nbrMergedPrsOutOfStandard = 0
-        cumulatedTfm = 0
-        print "PRs Summary"
-        print("suspicious Prs")
-        for pr in prs:
-            #tfm = time for merge: time between ready for review and merge
+    def printSuspiciousPR(self, scalityPrs):
+        print "suspicious Prs"
+        for scalityPr in scalityPrs:
+            pr = scalityPr.getIssue()
             prid = pr['number']
-            # for standard PRs, ready for review date is equivalent to PR open date
-            created = parse(pr['created_at'])
-            closed = parse(pr['closed_at'])
-            eventsUrl = pr['events_url']
-            events = ghClient.collectItems(eventsUrl)
-            ready_review = GHUtils.getFirstEventDate(events,'ready_for_review')
-            # for draft PRs, ready for review date is available in event list
-            if ready_review is not None:
-                created = ready_review
-            if created is not None and closed is not None:
-                nbrMergedPrs += 1
-                prTfm = GHUtils.getDeltaWEExcluded(created, closed)
-                cumulatedTfm = cumulatedTfm + prTfm
-                if prTfm > 36:
-                    nbrMergedPrsOutOfStandard += 1
-                    print (str(prTfm) + "," + GHUtils.getDayDate(created) + "," + GHUtils.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
-        print "merged PRs: " + str(nbrMergedPrs)
-        print "in std: " + str(nbrMergedPrs - nbrMergedPrsOutOfStandard)
-        print "out std: " + str(nbrMergedPrsOutOfStandard)
-        print "avg merge time: " + str(cumulatedTfm / nbrMergedPrs)
-        return  str(nbrMergedPrs) + "," + str(nbrMergedPrs - nbrMergedPrsOutOfStandard) + "," + str(nbrMergedPrsOutOfStandard) + "," + str(cumulatedTfm / nbrMergedPrs)
+            created = scalityPr.getStartDate()
+            closed = scalityPr.getEndDate()
+            tfm = scalityPr.getElapsedHours()
+            print (str(tfm) + "," + GHUtils.getDayDate(created) + "," + GHUtils.getDayDate(closed) + "," + pr['user']['login'] + "," + pr['title'] + "," + pr['html_url'])
+
+    def getPrsSummary(self, scalityPrs):
+        nbrMerged = len(scalityPrs)
+        nbrInStd = nbrMerged
+        cummulatedTime = 0
+        suspiciousPrs = []
+        for scalityPr in scalityPrs:
+            tfm = scalityPr.getElapsedHours()
+            cummulatedTime += tfm
+            if tfm > 36:
+                nbrInStd -= 1
+                suspiciousPrs.append(scalityPr)
+        print "PRs Summary"
+        print "merged PRs: " + str(nbrMerged)
+        print "in std: " + str(nbrInStd)
+        print "out std: " + str(nbrMerged - nbrInStd)
+        print "avg merge time: " + str(cummulatedTime / nbrMerged)
+        self.printSuspiciousPR(suspiciousPrs)
+        return  str(nbrMerged) + "," + str(nbrInStd) + "," + str(nbrMerged - nbrInStd) + "," + str(cummulatedTime / nbrMerged)
 
 #start = raw_input("start (YYYY-MM-DD): ")
 start = '2019-07-08'
@@ -87,9 +84,14 @@ for issue in issues:
     scalityIssues.append(scalityIssue)
 issuesSummary = ghWeekAnalysis.getIssuesSummary(scalityIssues)
 
+scalityPrs = []
 prsUrl = "https://api.github.com/search/issues?q=is:pr+is:merged+repo:scality/metalk8s+merged:"+start+".."+end+"&per_page=100"
 prs = ghClient.collectItems(prsUrl)
-prsSummary = ghWeekAnalysis.getPrsSummary(prs)
+for pr in prs:
+    scalityPr = ScalityIssue.toScalityIssue(pr, ghClient)
+    scalityPrs.append(scalityPr)
+prsSummary = ghWeekAnalysis.getPrsSummary(scalityPrs)
 
+print "copy in https://docs.google.com/spreadsheets/d/1ebrg_dyWGUKF_20LBlYMJvMX5pr2NMChB-j8HQPBvtc/edit#gid=1173901207"
 print "merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days"
 print prsSummary + "," + issuesSummary

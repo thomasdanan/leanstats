@@ -39,6 +39,15 @@ class ScalityIssue:
             return self.issue['user']['login']
         else: return "Unknown"
 
+    def getEndDate(self):
+        state = self.issue['state']
+        end = self.issue['closed_at']
+        # if issue is opened, no end date so elapsed is time between start date and now
+        if state == 'open':
+            return datetime.datetime.now()
+        else:
+            return parse(end)
+
     def getStartDate(self):
         # for draft PRs, ready for review date is available in event list
         if 'pull_request' in self.issue.keys() and GHUtils.getFirstEventDate(self.events,'ready_for_review') != None:
@@ -54,15 +63,9 @@ class ScalityIssue:
         return GHUtils.getFirstEventDate(self.events,'assigned')
 
     def getElapsedHours(self):
-        state = self.issue['state']
         start = self.getStartDate()
-        end = self.issue['closed_at']
-        # if issue is opened, no end date so elapsed is time between start date and now
-        if state == 'open':
-            elapsedHours = GHUtils.getDeltaWEExcluded(start,datetime.datetime.now())
-        else:
-            elapsedHours = GHUtils.getDeltaWEExcluded(start,parse(end))
-        return elapsedHours
+        end = self.getEndDate()
+        return GHUtils.getDeltaWEExcluded(start, end)
 
     def getElapsedDays(self):
         elapsedHours = self.getElapsedHours()
