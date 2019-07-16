@@ -36,7 +36,7 @@ passwd = getpass.getpass()
 ghClient = GHClient(user, passwd)
 ghIssues = GHWIPPRs(ghClient)
 scalityIssues = []
-url = "https://api.github.com/search/issues?q=is:pr+is:open+repo:scality/metalk8s&per_page=100"
+url = "https://api.github.com/search/issues?q=is:pr+is:open+repo:scality/metalk8s+draft:false&per_page=100"
 issues = ghClient.collectItems(url)
 for issue in issues:
     scalityIssue = ScalityIssue.toScalityIssue(issue, ghClient)

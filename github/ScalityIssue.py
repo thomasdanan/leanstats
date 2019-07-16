@@ -25,7 +25,7 @@ class ScalityIssue:
     def containsLabel(self, searchLabel):
         labels = self.issue['labels']
         for label in labels:
-            if label['name']==searchLabel:
+            if label['name'] == searchLabel:
                 return True
         return False
 
