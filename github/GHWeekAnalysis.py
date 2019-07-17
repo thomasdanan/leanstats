@@ -66,10 +66,10 @@ class GHWeekAnalysis:
         self.printSuspiciousPR(suspiciousPrs)
         return  str(nbrMerged) + "," + str(nbrInStd) + "," + str(nbrMerged - nbrInStd) + "," + str(cummulatedTime / nbrMerged)
 
-#start = raw_input("start (YYYY-MM-DD): ")
-start = '2019-07-08'
-#end = raw_input("end (YYYY-MM-DD): ")
-end = '2019-07-14'
+start = raw_input("start (YYYY-MM-DD): ")
+#start = '2019-07-08'
+end = raw_input("end (YYYY-MM-DD): ")
+#end = '2019-07-14'
 user = raw_input("github id: ")
 #user = 'thomasdanan'
 passwd = getpass.getpass()
