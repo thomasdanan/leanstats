@@ -28,7 +28,7 @@ class GHWIPPRs:
             start = scalityIssue.getStartDate()
             elapsedHours = scalityIssue.getElapsedHours()
             elapsedDays = "%.1f" % (elapsedHours / 24.0)
-            print str(number)+";"+issue['title']+";"+assignee+";"+GHUtils.getDayDate(start)+";"+elapsedDays
+            print str(number)+","+issue['title']+","+assignee+","+GHUtils.getDayDate(start)+","+elapsedDays
 
 user = raw_input("github id: ")
 #user = 'thomasdanan'

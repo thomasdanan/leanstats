@@ -6,15 +6,26 @@ from GHUtils import GHUtils
 # can be GH Issue or GH Pull request
 class ScalityIssue:
     issue = None
-    complexity = None
     events = None
-    def __init__(self, issue, complexity, events):
+    ghClient = None
+    def __init__(self, issue, ghClient):
         self.issue = issue
-        self.events = events
-        self.complexity = complexity
+        self.ghClient = ghClient
+
+    def getEvents(self):
+        if self.events == None:
+            self.events = self.ghClient.collectItems(self.issue['events_url'])
+        return self.events
 
     def getComplexity(self):
-        return self.complexity
+        if self.containsLabel('easy'):
+            return 'easy'
+        elif self.containsLabel('medium'):
+            return 'medium'
+        elif self.containsLabel('hard'):
+            return 'hard'
+        else:
+            return "Unknown"
 
     def changeCreated(self, created):
         self.issue['created'] = created
@@ -50,17 +61,20 @@ class ScalityIssue:
 
     def getStartDate(self):
         # for draft PRs, ready for review date is available in event list
-        if 'pull_request' in self.issue.keys() and GHUtils.getFirstEventDate(self.events,'ready_for_review') != None:
-            return GHUtils.getFirstEventDate(self.events,'ready_for_review')
+        if 'pull_request' in self.issue.keys() and GHUtils.getFirstEventDate(self.getEvents(),'ready_for_review') != None:
+            return GHUtils.getFirstEventDate(self.getEvents(),'ready_for_review')
         # for issues, count from last assignee event (does not apply for PRs)
         elif 'pull_request' not in self.issue.keys() and self.issue['assignee'] != None:
-            return GHUtils.getLastEventDate(self.events,'assigned')
+            return GHUtils.getLastEventDate(self.getEvents(),'assigned')
         # in all other cases, use created_at
         else:
             return parse(self.issue['created_at'])
 
+    def getCreatedAt(self):
+        return parse(self.issue['created_at'])
+
     def getAge(self):
-        return GHUtils.getFirstEventDate(self.events,'assigned')
+        return GHUtils.getFirstEventDate(self.getEvents(),'assigned')
 
     def getElapsedHours(self):
         start = self.getStartDate()
@@ -74,30 +88,17 @@ class ScalityIssue:
 
     def isInStd(self):
         elapsedHours = self.getElapsedHours()
-        if self.complexity == "easy" and elapsedHours <= 24:
+        complexity = self.getComplexity()
+        if complexity == "easy" and elapsedHours <= 24:
             return True
-        elif self.complexity == "medium" and elapsedHours <= 72:
+        elif complexity == "medium" and elapsedHours <= 72:
             return True
-        elif self.complexity == "hard" and elapsedHours <= 120:
+        elif complexity == "hard" and elapsedHours <= 120:
             return True
         else:
             return False
 
     @staticmethod
     def toScalityIssue(issue, ghClient):
-        eventsUrl = issue['events_url']
-        events = ghClient.collectItems(eventsUrl)
-        complexity = "Unknown"
-        labels = issue['labels']
-        for label in labels:
-            if label['name']=='easy':
-                complexity = "easy"
-                break
-            elif label['name']=='medium':
-                complexity = "medium"
-                break
-            elif label['name']=='hard':
-                complexity=  "hard"
-                break
-        scalityIssue = ScalityIssue(issue, complexity, events)
+        scalityIssue = ScalityIssue(issue, ghClient)
         return scalityIssue

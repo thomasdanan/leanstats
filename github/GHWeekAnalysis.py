@@ -1,6 +1,9 @@
 #!/usr/bin/python
 import getpass
 from dateutil.parser import parse
+from datetime import timedelta
+import pytz
+
 
 from ScalityIssue import ScalityIssue
 from GHClient import GHClient
@@ -30,7 +33,7 @@ class GHWeekAnalysis:
         avgElapsedHours = cummulatedTime / nbrClosed
         elapsedDays = "%.1f" % (avgElapsedHours / 24.0)
         nbrOutStd = nbrClosed - nbrNotEstimated - nbrInStd
-        print "Issues Summary"
+        print "##### Issues Summary #####"
         print "in std: " + str(nbrInStd)
         print "no estimation: " + str(nbrNotEstimated)
         print "out std: " + str(nbrOutStd)
@@ -58,7 +61,7 @@ class GHWeekAnalysis:
             if tfm > 36:
                 nbrInStd -= 1
                 suspiciousPrs.append(scalityPr)
-        print "PRs Summary"
+        print "##### PRs Summary #####"
         print "merged PRs: " + str(nbrMerged)
         print "in std: " + str(nbrInStd)
         print "out std: " + str(nbrMerged - nbrInStd)
@@ -66,11 +69,51 @@ class GHWeekAnalysis:
         self.printSuspiciousPR(suspiciousPrs)
         return  str(nbrMerged) + "," + str(nbrInStd) + "," + str(nbrMerged - nbrInStd) + "," + str(cummulatedTime / nbrMerged)
 
-start = raw_input("start (YYYY-MM-DD): ")
+    def getBacklogSummary(self, backlogItems, start, end):
+        paris = pytz.timezone('Europe/Paris')
+        startDate = parse(start)
+        startDate = paris.localize(startDate)
+
+        endDate = parse(end) + timedelta(days=1)
+        endDate = paris.localize(endDate)
+
+        debts = 0
+        bugs = 0
+        others = 0
+        debtsInPeriod = 0
+        bugsInPeriod = 0
+        othersInPeriod = 0
+        issuesUrl = "https://api.github.com/search/issues?q=is:issue+is:open+repo:scality/metalk8s&per_page=100"
+        issues = ghClient.collectItems(issuesUrl)
+        for backlogItem in backlogItems:
+            createdDate = backlogItem.getCreatedAt()
+            if backlogItem.containsLabel('bug'):
+                bugs += 1
+                if GHUtils.isDateInRange(startDate, endDate, createdDate):
+                    bugsInPeriod += 1
+            elif backlogItem.containsLabel('debt'):
+                debts += 1
+                if GHUtils.isDateInRange(startDate, endDate, createdDate):
+                    debtsInPeriod += 1
+            else:
+                others += 1
+                if GHUtils.isDateInRange(startDate, endDate, createdDate):
+                    othersInPeriod += 1
+        print "##### Backlog Summary #####"
+        print "bugsInPeriod: " + str(bugsInPeriod)
+        print "debtsInPeriod: " + str(debtsInPeriod)
+        print "othersInPeriod: " + str(othersInPeriod)
+        print "bugs: " + str(bugs)
+        print "debts: " + str(debts)
+        print "others: " + str(others)
+        return  str(bugsInPeriod) + "," + str(debtsInPeriod) + "," + str(othersInPeriod) + "," + str(bugs) + "," + str(debts) + "," + str(others)
+
+
+start = raw_input("start (YYYY-MM-DD): ").strip()
 #start = '2019-07-08'
-end = raw_input("end (YYYY-MM-DD): ")
+end = raw_input("end (YYYY-MM-DD): ").strip()
 #end = '2019-07-14'
-user = raw_input("github id: ")
+user = raw_input("github id: ").strip()
 #user = 'thomasdanan'
 passwd = getpass.getpass()
 ghClient = GHClient(user, passwd)
@@ -92,6 +135,15 @@ for pr in prs:
     scalityPrs.append(scalityPr)
 prsSummary = ghWeekAnalysis.getPrsSummary(scalityPrs)
 
+
+backlogItems = []
+backlogUrl = "https://api.github.com/search/issues?q=is:issue+is:open+repo:scality/metalk8s&per_page=100"
+issues = ghClient.collectItems(backlogUrl)
+for issue in issues:
+    backlogItem = ScalityIssue.toScalityIssue(issue, ghClient)
+    backlogItems.append(backlogItem)
+backlogSummary = ghWeekAnalysis.getBacklogSummary(backlogItems, start, end)
+
 print "copy in https://docs.google.com/spreadsheets/d/1ebrg_dyWGUKF_20LBlYMJvMX5pr2NMChB-j8HQPBvtc/edit#gid=1173901207"
-print "merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days"
-print prsSummary + "," + issuesSummary
+print "merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days,bugsInPeriod,debtsInPeriod,othersInPeriod,bugs,debts,others"
+print prsSummary + "," + issuesSummary + "," + backlogSummary

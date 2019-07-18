@@ -37,3 +37,7 @@ class GHUtils:
         deltahours = end.hour - start.hour
         tfm = (deltadays * 24) + deltahours
         return tfm
+
+    @staticmethod
+    def isDateInRange(start, end, date):
+        return date >= start and date < end
