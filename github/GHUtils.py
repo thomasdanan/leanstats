@@ -27,6 +27,10 @@ class GHUtils:
         return None
 
     @staticmethod
+    def getWeekNumber(date):
+        return str(date.isocalendar()[0])+"-"+str(date.isocalendar()[1]).zfill(2)
+
+    @staticmethod
     def getDayDate(date):
         return str(date.strftime("%Y-%m-%d"))
 
