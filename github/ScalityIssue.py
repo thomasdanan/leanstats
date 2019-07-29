@@ -50,6 +50,16 @@ class ScalityIssue:
             return self.issue['user']['login']
         else: return "Unknown"
 
+    def getAssignees(self):
+        assignees = None
+        if self.issue['assignees'] != None:
+            for assignee in self.issue['assignees']:
+                if assignees == None:
+                    assignees = assignee['login']
+                else:
+                    assignees += ";"+assignee['login']
+        return assignees
+
     def getEndDate(self):
         state = self.issue['state']
         end = self.issue['closed_at']
