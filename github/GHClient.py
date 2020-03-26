@@ -17,10 +17,10 @@ from dateutil.parser import parse
 class GHClient:
     user = ''
     password = ''
+    token = "9c572c047c1fa727601eca4cc9103bc82465bdcc"
 
-    def __init__(self, user, password):
-        self.user = user
-        self.password = password
+    def __init__(self, token):
+        self.token = token
 
     ## Link: <https://api.github.com/repositories/124905930/pulls?state=closed&page=17>; rel="prev", <https://api.github.com/repositories/124905930/pulls?state=closed&page=1>; rel="first"
     def getNextPageUrl(self, headers):
@@ -36,9 +36,9 @@ class GHClient:
         items = []
         while nextPageUrl != None:
             if not headers:
-                myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password))
-            else:
-                myResponse = requests.get(nextPageUrl, auth=HTTPBasicAuth(self.user, self.password), headers=headers)
+                headers = {}
+            headers['Authorization'] = 'token %s' % self.token
+            myResponse = requests.get(nextPageUrl, headers=headers)
             if(myResponse.ok):
                 nextPageUrl = self.getNextPageUrl(myResponse.headers)
                 jsonResult = json.loads(myResponse.content)

@@ -33,15 +33,15 @@ class GHWeekAnalysis:
         avgElapsedHours = cummulatedTime / nbrClosed
         elapsedDays = "%.1f" % (avgElapsedHours / 24.0)
         nbrOutStd = nbrClosed - nbrNotEstimated - nbrInStd
-        print "##### Issues Summary #####"
-        print "in std: " + str(nbrInStd)
-        print "no estimation: " + str(nbrNotEstimated)
-        print "out std: " + str(nbrOutStd)
-        print "avg elapsed days: " + str(elapsedDays)
-        return str(nbrInStd)+","+str(nbrNotEstimated)+","+str(nbrOutStd)+","+str(elapsedDays)
+        print ("##### Issues Summary #####")
+        print ("in std: " + str(nbrInStd))
+        print ("no estimation: " + str(nbrNotEstimated))
+        print ("out std: " + str(nbrOutStd))
+        print ("avg elapsed days: " + str(elapsedDays))
+        return (str(nbrInStd)+","+str(nbrNotEstimated)+","+str(nbrOutStd)+","+str(elapsedDays))
 
     def printSuspiciousPR(self, scalityPrs):
-        print "suspicious Prs"
+        print ("suspicious Prs")
         for scalityPr in scalityPrs:
             pr = scalityPr.getIssue()
             prid = pr['number']
@@ -61,11 +61,11 @@ class GHWeekAnalysis:
             if tfm > 36:
                 nbrInStd -= 1
                 suspiciousPrs.append(scalityPr)
-        print "##### PRs Summary #####"
-        print "merged PRs: " + str(nbrMerged)
-        print "in std: " + str(nbrInStd)
-        print "out std: " + str(nbrMerged - nbrInStd)
-        print "avg merge time: " + str(cummulatedTime / nbrMerged)
+        print ("##### PRs Summary #####")
+        print ("merged PRs: " + str(nbrMerged))
+        print ("in std: " + str(nbrInStd))
+        print ("out std: " + str(nbrMerged - nbrInStd))
+        print ("avg merge time: " + str(cummulatedTime / nbrMerged))
         self.printSuspiciousPR(suspiciousPrs)
         return  str(nbrMerged) + "," + str(nbrInStd) + "," + str(nbrMerged - nbrInStd) + "," + str(cummulatedTime / nbrMerged)
 
@@ -99,24 +99,24 @@ class GHWeekAnalysis:
                 others += 1
                 if GHUtils.isDateInRange(startDate, endDate, createdDate):
                     othersInPeriod += 1
-        print "##### Backlog Summary #####"
-        print "bugsInPeriod: " + str(bugsInPeriod)
-        print "debtsInPeriod: " + str(debtsInPeriod)
-        print "othersInPeriod: " + str(othersInPeriod)
-        print "bugs: " + str(bugs)
-        print "debts: " + str(debts)
-        print "others: " + str(others)
+        print ("##### Backlog Summary #####")
+        print ("bugsInPeriod: " + str(bugsInPeriod))
+        print ("debtsInPeriod: " + str(debtsInPeriod))
+        print ("othersInPeriod: " + str(othersInPeriod))
+        print ("bugs: " + str(bugs))
+        print ("debts: " + str(debts))
+        print ("others: " + str(others))
         return  str(bugsInPeriod) + "," + str(debtsInPeriod) + "," + str(othersInPeriod) + "," + str(bugs) + "," + str(debts) + "," + str(others)
 
 
-start = raw_input("start (YYYY-MM-DD): ").strip()
+start = input("start (YYYY-MM-DD): ").strip()
 #start = '2019-07-08'
-end = raw_input("end (YYYY-MM-DD): ").strip()
+end = input("end (YYYY-MM-DD): ").strip()
 #end = '2019-07-14'
-user = raw_input("github id: ").strip()
-#user = 'thomasdanan'
-passwd = getpass.getpass()
-ghClient = GHClient(user, passwd)
+#go there to generate one: https://github.com/settings/tokens
+accessToken = input("personal access token: ").strip()
+
+ghClient = GHClient(accessToken)
 ghWeekAnalysis = GHWeekAnalysis(ghClient)
 
 scalityIssues = []
@@ -144,6 +144,6 @@ for issue in issues:
     backlogItems.append(backlogItem)
 backlogSummary = ghWeekAnalysis.getBacklogSummary(backlogItems, start, end)
 
-print "copy in https://docs.google.com/spreadsheets/d/1ebrg_dyWGUKF_20LBlYMJvMX5pr2NMChB-j8HQPBvtc/edit#gid=1173901207"
-print "merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days,bugsInPeriod,debtsInPeriod,othersInPeriod,bugs,debts,others"
-print prsSummary + "," + issuesSummary + "," + backlogSummary
+print ("copy in https://docs.google.com/spreadsheets/d/1ebrg_dyWGUKF_20LBlYMJvMX5pr2NMChB-j8HQPBvtc/edit#gid=1173901207")
+print ("merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days,bugsInPeriod,debtsInPeriod,othersInPeriod,bugs,debts,others")
+print (prsSummary + "," + issuesSummary + "," + backlogSummary)
