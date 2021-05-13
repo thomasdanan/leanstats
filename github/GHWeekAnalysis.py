@@ -3,15 +3,19 @@ import getpass
 from dateutil.parser import parse
 from datetime import timedelta
 import pytz
+import json
 
 
 from ScalityIssue import ScalityIssue
+from ScalityProject import ScalityProject
+
 from GHClient import GHClient
 from GHUtils import GHUtils
 
 
 class GHWeekAnalysis:
 
+    reposghargs="repo:scality/ringx+repo:scality/metalk8s+repo:scality/core-ui"
     ghClient = None
 
     def __init__(self, ghClient):
@@ -87,11 +91,11 @@ class GHWeekAnalysis:
         issues = ghClient.collectItems(issuesUrl)
         for backlogItem in backlogItems:
             createdDate = backlogItem.getCreatedAt()
-            if backlogItem.containsLabel('bug'):
+            if backlogItem.containsLabel('kind:bug'):
                 bugs += 1
                 if GHUtils.isDateInRange(startDate, endDate, createdDate):
                     bugsInPeriod += 1
-            elif backlogItem.containsLabel('debt'):
+            elif backlogItem.containsLabel('kind:debt'):
                 debts += 1
                 if GHUtils.isDateInRange(startDate, endDate, createdDate):
                     debtsInPeriod += 1
@@ -110,9 +114,9 @@ class GHWeekAnalysis:
 
 
 start = input("start (YYYY-MM-DD): ").strip()
-#start = '2019-07-08'
+#start = '2021-04-01'
 end = input("end (YYYY-MM-DD): ").strip()
-#end = '2019-07-14'
+#end = '2021-05-01'
 #go there to generate one: https://github.com/settings/tokens
 accessToken = input("personal access token: ").strip()
 
@@ -120,15 +124,16 @@ ghClient = GHClient(accessToken)
 ghWeekAnalysis = GHWeekAnalysis(ghClient)
 
 scalityIssues = []
-issuesUrl = "https://api.github.com/search/issues?q=is:issue+is:closed+repo:scality/metalk8s+closed:"+start+".."+end+"&per_page=100"
+issuesUrl = "https://api.github.com/search/issues?q=is:issue+is:closed+"+ghWeekAnalysis.reposghargs+"+-label:kind:epic+closed:"+start+".."+end+"&per_page=100"
 issues = ghClient.collectItems(issuesUrl)
 for issue in issues:
     scalityIssue = ScalityIssue.toScalityIssue(issue, ghClient)
     scalityIssues.append(scalityIssue)
+
 issuesSummary = ghWeekAnalysis.getIssuesSummary(scalityIssues)
 
 scalityPrs = []
-prsUrl = "https://api.github.com/search/issues?q=is:pr+is:merged+repo:scality/metalk8s+merged:"+start+".."+end+"&per_page=100"
+prsUrl = "https://api.github.com/search/issues?q=is:pr+is:merged+"+ghWeekAnalysis.reposghargs+"+merged:"+start+".."+end+"&per_page=100"
 prs = ghClient.collectItems(prsUrl)
 for pr in prs:
     scalityPr = ScalityIssue.toScalityIssue(pr, ghClient)
@@ -137,7 +142,7 @@ prsSummary = ghWeekAnalysis.getPrsSummary(scalityPrs)
 
 
 backlogItems = []
-backlogUrl = "https://api.github.com/search/issues?q=is:issue+is:open+repo:scality/metalk8s&per_page=100"
+backlogUrl = "https://api.github.com/search/issues?q=is:issue+is:open+"+ghWeekAnalysis.reposghargs+"&per_page=100"
 issues = ghClient.collectItems(backlogUrl)
 for issue in issues:
     backlogItem = ScalityIssue.toScalityIssue(issue, ghClient)

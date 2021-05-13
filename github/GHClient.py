@@ -15,9 +15,7 @@ import re
 from dateutil.parser import parse
 
 class GHClient:
-    user = ''
-    password = ''
-    token = "9c572c047c1fa727601eca4cc9103bc82465bdcc"
+    token = ''
 
     def __init__(self, token):
         self.token = token
@@ -30,6 +28,18 @@ class GHClient:
             if matchs != None:
                 return matchs.group(1)
         return None
+
+    def collectItem(self, url, headers):
+        if not headers:
+            headers = {}
+        item = None
+        headers['Authorization'] = 'token %s' % self.token
+        myResponse = requests.get(url, headers=headers)
+        if(myResponse.ok):
+            item = json.loads(myResponse.content)
+        else:
+            myResponse.raise_for_status()
+        return item
 
     def collectItems(self, url, **headers):
         nextPageUrl = url

@@ -20,6 +20,14 @@ class GHUtils:
         return None
 
     @staticmethod
+    def filterEventsByKey(events, eventKey):
+        result = []
+        for event in events:
+            if event['event'] == eventKey:
+                result.append(eventKey)
+        return result
+
+    @staticmethod
     def getFirstEventDate(events, eventKey):
         for event in events:
             if event['event'] == eventKey:

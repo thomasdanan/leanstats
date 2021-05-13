@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from dateutil.parser import parse
 import datetime
+import json
 from GHUtils import GHUtils
 
 # can be GH Issue or GH Pull request
@@ -17,12 +18,15 @@ class ScalityIssue:
             self.events = self.ghClient.collectItems(self.issue['events_url'])
         return self.events
 
+    def getEventsByKey(self, key):
+        return GHUtils.filterEventsByKey(self.getEvents(),key)
+
     def getComplexity(self):
-        if self.containsLabel('easy'):
+        if self.containsLabel('complexity:easy'):
             return 'easy'
-        elif self.containsLabel('medium'):
+        elif self.containsLabel('complexity:medium'):
             return 'medium'
-        elif self.containsLabel('hard'):
+        elif self.containsLabel('complexity:hard'):
             return 'hard'
         else:
             return "Unknown"
@@ -41,7 +45,7 @@ class ScalityIssue:
         return False
 
     def isBlocked(self):
-        return self.containsLabel('blocked')
+        return self.containsLabel('state:blocked')
 
     def getAssignee(self):
         if self.issue['assignee'] != None:
