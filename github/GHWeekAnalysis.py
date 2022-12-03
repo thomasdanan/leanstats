@@ -15,12 +15,12 @@ from GHUtils import GHUtils
 
 class GHWeekAnalysis:
 
-    reposghargs="repo:scality/ringx+repo:scality/metalk8s+repo:scality/core-ui"
+    repo=None
     ghClient = None
 
-    def __init__(self, ghClient):
+    def __init__(self, repos, ghClient):
+        self.repos = repos
         self.ghClient = ghClient
-
 
     def getIssuesSummary(self, scalityIssues):
         # sort by issue start date
@@ -28,15 +28,18 @@ class GHWeekAnalysis:
         nbrInStd = 0
         nbrNotEstimated = 0
         cummulatedTime = 0
-        for scalityIssue in scalityIssues:
-            cummulatedTime += scalityIssue.getElapsedHours()
-            if scalityIssue.getComplexity() == "Unknown":
-                nbrNotEstimated += 1
-            elif scalityIssue.isInStd():
-                nbrInStd += 1
-        avgElapsedHours = cummulatedTime / nbrClosed
-        elapsedDays = "%.1f" % (avgElapsedHours / 24.0)
-        nbrOutStd = nbrClosed - nbrNotEstimated - nbrInStd
+        elapsedDays = 0
+        nbrOutStd = 0
+        if nbrClosed > 0:
+          for scalityIssue in scalityIssues:
+              cummulatedTime += scalityIssue.getElapsedHours()
+              if scalityIssue.getComplexity() == "Unknown":
+                  nbrNotEstimated += 1
+              elif scalityIssue.isInStd():
+                  nbrInStd += 1
+          avgElapsedHours = cummulatedTime / nbrClosed
+          elapsedDays = "%.1f" % (avgElapsedHours / 24.0)
+          nbrOutStd = nbrClosed - nbrNotEstimated - nbrInStd
         print ("##### Issues Summary #####")
         print ("in std: " + str(nbrInStd))
         print ("no estimation: " + str(nbrNotEstimated))
@@ -114,41 +117,23 @@ class GHWeekAnalysis:
 
 
 start = input("start (YYYY-MM-DD): ").strip()
-#start = '2021-04-01'
 end = input("end (YYYY-MM-DD): ").strip()
-#end = '2021-05-01'
 #go there to generate one: https://github.com/settings/tokens
 accessToken = input("personal access token: ").strip()
+#reposghargs="repo:scality/ringx+repo:scality/metalk8s+repo:scality/core-ui"
+repos = input("'+' separated repo list ex: repo:scality/cloudserver+repo:scality/metalk8s: ").strip()
 
 ghClient = GHClient(accessToken)
-ghWeekAnalysis = GHWeekAnalysis(ghClient)
-
-scalityIssues = []
-issuesUrl = "https://api.github.com/search/issues?q=is:issue+is:closed+"+ghWeekAnalysis.reposghargs+"+-label:kind:epic+closed:"+start+".."+end+"&per_page=100"
-issues = ghClient.collectItems(issuesUrl)
-for issue in issues:
-    scalityIssue = ScalityIssue.toScalityIssue(issue, ghClient)
-    scalityIssues.append(scalityIssue)
-
-issuesSummary = ghWeekAnalysis.getIssuesSummary(scalityIssues)
+ghWeekAnalysis = GHWeekAnalysis(repos, ghClient)
 
 scalityPrs = []
-prsUrl = "https://api.github.com/search/issues?q=is:pr+is:merged+"+ghWeekAnalysis.reposghargs+"+merged:"+start+".."+end+"&per_page=100"
+prsUrl = "https://api.github.com/search/issues?q=is:pr+is:merged+"+ghWeekAnalysis.repos+"+merged:"+start+".."+end+"&per_page=100"
 prs = ghClient.collectItems(prsUrl)
 for pr in prs:
     scalityPr = ScalityIssue.toScalityIssue(pr, ghClient)
     scalityPrs.append(scalityPr)
 prsSummary = ghWeekAnalysis.getPrsSummary(scalityPrs)
 
-
-backlogItems = []
-backlogUrl = "https://api.github.com/search/issues?q=is:issue+is:open+"+ghWeekAnalysis.reposghargs+"&per_page=100"
-issues = ghClient.collectItems(backlogUrl)
-for issue in issues:
-    backlogItem = ScalityIssue.toScalityIssue(issue, ghClient)
-    backlogItems.append(backlogItem)
-backlogSummary = ghWeekAnalysis.getBacklogSummary(backlogItems, start, end)
-
 print ("copy in https://docs.google.com/spreadsheets/d/1ebrg_dyWGUKF_20LBlYMJvMX5pr2NMChB-j8HQPBvtc/edit#gid=1173901207")
-print ("merged PRs,in std,out std, avg merge time,in std,no estimation,out std,avg elapsed days,bugsInPeriod,debtsInPeriod,othersInPeriod,bugs,debts,others")
-print (prsSummary + "," + issuesSummary + "," + backlogSummary)
+print ("merged PRs,in std,out std, avg merge time")
+print (prsSummary)
